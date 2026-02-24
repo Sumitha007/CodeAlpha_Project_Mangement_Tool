@@ -1,0 +1,129 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 220 25% 97%;
+    --foreground: 224 40% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 224 40% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 224 40% 12%;
+    --primary: 230 70% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 20% 93%;
+    --secondary-foreground: 224 40% 12%;
+    --muted: 220 15% 93%;
+    --muted-foreground: 220 10% 46%;
+    --accent: 230 70% 50%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 15% 90%;
+    --input: 220 15% 90%;
+    --ring: 230 70% 50%;
+    --radius: 0.75rem;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+
+    --priority-low: 150 60% 42%;
+    --priority-medium: 38 92% 50%;
+    --priority-high: 25 90% 55%;
+    --priority-urgent: 0 72% 51%;
+    --success: 150 60% 42%;
+    --warning: 38 92% 50%;
+    --kanban-column: 220 20% 95%;
+  }
+
+  .dark {
+    --background: 224 40% 8%;
+    --foreground: 210 25% 95%;
+    --card: 224 35% 12%;
+    --card-foreground: 210 25% 95%;
+    --popover: 224 35% 12%;
+    --popover-foreground: 210 25% 95%;
+    --primary: 230 80% 65%;
+    --primary-foreground: 224 40% 8%;
+    --secondary: 224 25% 18%;
+    --secondary-foreground: 210 25% 95%;
+    --muted: 224 20% 16%;
+    --muted-foreground: 220 10% 55%;
+    --accent: 230 80% 65%;
+    --accent-foreground: 224 40% 8%;
+    --destructive: 0 62% 45%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 224 20% 18%;
+    --input: 224 20% 18%;
+    --ring: 230 80% 65%;
+
+    --sidebar-background: 224 35% 10%;
+    --sidebar-foreground: 210 25% 90%;
+    --sidebar-primary: 230 80% 65%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 224 25% 15%;
+    --sidebar-accent-foreground: 210 25% 90%;
+    --sidebar-border: 224 20% 18%;
+    --sidebar-ring: 230 80% 65%;
+
+    --priority-low: 150 50% 50%;
+    --priority-medium: 38 80% 55%;
+    --priority-high: 25 80% 60%;
+    --priority-urgent: 0 65% 55%;
+    --success: 150 50% 50%;
+    --warning: 38 80% 55%;
+    --kanban-column: 224 25% 14%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+}
+
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 3px;
+  }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(16px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out both;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s ease-out both;
+}
