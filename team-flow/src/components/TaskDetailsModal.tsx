@@ -46,10 +46,19 @@ export default function TaskDetailsModal({ open, onClose, task, projectId, board
   }, [task, boardId]);
 
   const handleSave = () => {
+    console.log('TaskDetailsModal handleSave - task object:', task);
+    console.log('TaskDetailsModal handleSave - task.id:', task.id);
+    
     if (!title.trim()) {
       toast({ variant: 'destructive', title: 'Task title is required' });
       return;
     }
+    
+    if (!task.id) {
+      toast({ variant: 'destructive', title: 'Task ID is missing - cannot save changes' });
+      return;
+    }
+    
     const assignee = assigneeId === 'none' ? null : members.find(m => m.id === assigneeId) || null;
     updateTask(projectId, boardId, task.id, {
       title: title.trim(),

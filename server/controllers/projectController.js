@@ -18,7 +18,16 @@ exports.getProjects = async (req, res, next) => {
     })
     .populate('owner', 'name email avatar')
     .populate('members.user', 'name email avatar')
-    .populate('boards')
+    .populate({
+      path: 'boards',
+      populate: {
+        path: 'tasks',
+        populate: [
+          { path: 'assignedTo', select: 'name email avatar' },
+          { path: 'createdBy', select: 'name email avatar' }
+        ]
+      }
+    })
     .sort('-createdAt');
 
     res.status(200).json({
@@ -39,7 +48,16 @@ exports.getProject = async (req, res, next) => {
     const project = await Project.findById(req.params.id)
       .populate('owner', 'name email avatar')
       .populate('members.user', 'name email avatar')
-      .populate('boards');
+      .populate({
+        path: 'boards',
+        populate: {
+          path: 'tasks',
+          populate: [
+            { path: 'assignedTo', select: 'name email avatar' },
+            { path: 'createdBy', select: 'name email avatar' }
+          ]
+        }
+      });
 
     if (!project) {
       return res.status(404).json({
@@ -131,7 +149,16 @@ exports.createProject = async (req, res, next) => {
     // Populate before sending response
     await project.populate('owner', 'name email avatar');
     await project.populate('members.user', 'name email avatar');
-    await project.populate('boards');
+    await project.populate({
+      path: 'boards',
+      populate: {
+        path: 'tasks',
+        populate: [
+          { path: 'assignedTo', select: 'name email avatar' },
+          { path: 'createdBy', select: 'name email avatar' }
+        ]
+      }
+    });
 
     // Emit socket event
     const io = req.app.get('io');
@@ -176,7 +203,16 @@ exports.updateProject = async (req, res, next) => {
     })
     .populate('owner', 'name email avatar')
     .populate('members.user', 'name email avatar')
-    .populate('boards');
+    .populate({
+      path: 'boards',
+      populate: {
+        path: 'tasks',
+        populate: [
+          { path: 'assignedTo', select: 'name email avatar' },
+          { path: 'createdBy', select: 'name email avatar' }
+        ]
+      }
+    });
 
     // Emit socket event
     const io = req.app.get('io');

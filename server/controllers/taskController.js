@@ -119,9 +119,14 @@ exports.createTask = async (req, res, next) => {
 // @access  Private
 exports.updateTask = async (req, res, next) => {
   try {
+    console.log('updateTask - req.params.id:', req.params.id);
+    console.log('updateTask - req.body:', req.body);
+    
     let task = await Task.findById(req.params.id);
+    console.log('updateTask - found task:', task);
 
     if (!task) {
+      console.log('updateTask - Task not found in database');
       return res.status(404).json({
         success: false,
         message: 'Task not found'

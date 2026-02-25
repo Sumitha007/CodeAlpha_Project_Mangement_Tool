@@ -227,6 +227,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         priority: 'medium',
       });
       if (response.success) {
+        // Optionally, you could optimistically add the new task to the board here
+        // but for now, just ensure refreshProjects will always map id correctly
+        if (response.data && response.data._id) {
+          response.data.id = response.data._id;
+        }
         pushNotification('task_assigned', `Task "${title}" was created`);
         toast.success(`Task created!`);
         await refreshProjects();
@@ -238,6 +243,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const updateTask = useCallback(async (projectId: string, boardId: string, taskId: string, updates: Partial<Task>, newBoardId?: string) => {
     try {
+      console.log('updateTask called with:', { projectId, boardId, taskId, updates, newBoardId });
+      
+      if (!taskId) {
+        toast.error('Task ID is missing - cannot update task');
+        return;
+      }
+      
       if (newBoardId && newBoardId !== boardId) {
         await tasksAPI.move(taskId, newBoardId, 0);
         pushNotification('task_moved', `Task moved`);
@@ -251,11 +263,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
         delete backendUpdates.id;
         delete backendUpdates.comments;
         
+        console.log('Calling tasksAPI.update with taskId:', taskId, 'updates:', backendUpdates);
         await tasksAPI.update(taskId, backendUpdates);
       }
       toast.success('Task updated!');
       await refreshProjects();
     } catch (error: any) {
+      console.error('updateTask error:', error);
       toast.error(error.response?.data?.message || 'Failed to update task');
     }
   }, [pushNotification, refreshProjects]);
@@ -279,6 +293,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const newBoards = p.boards.map(b => ({ ...b, tasks: [...b.tasks] }));
       const sourceBoard = newBoards.find(b => b.id === sourceBoardId)!;
       const [movedTask] = sourceBoard.tasks.splice(sourceIndex, 1);
+      console.log('Moving task:', movedTask);
       if (sourceBoardId === destBoardId) {
         sourceBoard.tasks.splice(destIndex, 0, movedTask);
       } else {
@@ -286,10 +301,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
         destBoard.tasks.splice(destIndex, 0, movedTask);
         pushNotification('task_moved', `"${movedTask.title}" moved to ${destBoard.title}`);
         // Call API to move task
-        tasksAPI.move(movedTask.id, destBoardId, destIndex).catch(error => {
-          toast.error('Failed to move task');
-          refreshProjects();
-        });
+        if (movedTask && movedTask.id) {
+          tasksAPI.move(movedTask.id, destBoardId, destIndex).catch(error => {
+            toast.error('Failed to move task');
+            refreshProjects();
+          });
+        } else {
+          console.error('moveTask: movedTask or movedTask.id is undefined!', movedTask);
+        }
       }
       return { ...p, boards: newBoards };
     }));
