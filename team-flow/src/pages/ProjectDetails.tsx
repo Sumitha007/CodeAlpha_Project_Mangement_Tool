@@ -3,10 +3,11 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '@/context/AppContext';
 import { DragDropContext, DropResult } from '@hello-pangea/dnd';
 import KanbanBoard from '@/components/KanbanBoard';
+import AddMemberModal from '@/components/AddMemberModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { ArrowLeft, Plus, Check, X } from 'lucide-react';
+import { ArrowLeft, Plus, Check, X, UserPlus } from 'lucide-react';
 import { getInitials, getAvatarColor } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -18,6 +19,7 @@ export default function ProjectDetails() {
 
   const [isAddingBoard, setIsAddingBoard] = useState(false);
   const [newBoardTitle, setNewBoardTitle] = useState('');
+  const [isAddingMember, setIsAddingMember] = useState(false);
 
   if (!project) {
     return (
@@ -70,6 +72,14 @@ export default function ProjectDetails() {
                 <TooltipContent>{m.name}</TooltipContent>
               </Tooltip>
             ))}
+            <Button 
+              variant="outline" 
+              size="icon" 
+              className="h-8 w-8 rounded-full border-2 border-dashed" 
+              onClick={() => setIsAddingMember(true)}
+            >
+              <UserPlus className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       </div>
@@ -123,6 +133,13 @@ export default function ProjectDetails() {
           </div>
         </div>
       </DragDropContext>
+
+      {/* Add Member Modal */}
+      <AddMemberModal 
+        projectId={project.id}
+        open={isAddingMember}
+        onClose={() => setIsAddingMember(false)}
+      />
     </div>
   );
 }

@@ -1,0 +1,9 @@
+# Add these lines to your .env for Gmail SMTP
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=your-app-specific-password
+
+# Change NODE_ENV to production to enable real emails
+NODE_ENV=production

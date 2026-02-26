@@ -8,12 +8,13 @@ import { authAPI, projectsAPI, boardsAPI, tasksAPI, commentsAPI, notificationsAP
 interface AppContextType {
   user: User | null;
   isAuthenticated: boolean;
+  authLoading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   register: (name: string, email: string, password: string) => Promise<boolean>;
   logout: () => void;
   projects: Project[];
   loading: boolean;
-  createProject: (name: string, description: string, memberIds: string[]) => Promise<void>;
+  createProject: (name: string, description: string, memberEmails: string[]) => Promise<void>;
   addBoard: (projectId: string, title: string) => Promise<void>;
   updateBoardTitle: (projectId: string, boardId: string, title: string) => void;
   deleteBoard: (projectId: string, boardId: string) => Promise<void>;
@@ -34,12 +35,10 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(() => {
-    const stored = localStorage.getItem('user');
-    return stored ? JSON.parse(stored) : null;
-  });
+  const [user, setUser] = useState<User | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [isDark, setIsDark] = useState(() => {
     document.documentElement.classList.add('dark');
@@ -54,34 +53,56 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const response = await projectsAPI.getAll();
       if (response.success) {
         // Transform backend data to frontend format
-        const transformedProjects = response.data.map((p: any) => ({
-          id: p._id,
-          name: p.name,
-          description: p.description || '',
-          members: p.members?.map((m: any) => ({
-            id: m.user?._id || m.user,
-            name: m.user?.name || 'Unknown',
-            email: m.user?.email || '',
-          })) || [],
-          createdAt: new Date(p.createdAt).toISOString().split('T')[0],
-          boards: p.boards?.map((b: any) => ({
-            id: b._id,
-            title: b.name,
-            tasks: (b.tasks || []).map((t: any) => ({
-              id: t._id,
-              title: t.title || '',
-              description: t.description || '',
-              priority: t.priority || 'medium',
-              dueDate: t.dueDate || null,
-              assignee: t.assignedTo?.[0] ? {
-                id: t.assignedTo[0]._id || t.assignedTo[0],
-                name: t.assignedTo[0].name || 'Unknown',
-                email: t.assignedTo[0].email || '',
-              } : null,
-              comments: t.comments || [],
-            })),
-          })) || [],
-        }));
+        const transformedProjects = response.data.map((p: any) => {
+          // Get members from the members array
+          const members = p.members?.map((m: any) => {
+            // Handle both populated and non-populated user references
+            const userData = m.user || m;
+            return {
+              id: userData._id || userData,
+              name: userData.name || 'Unknown',
+              email: userData.email || '',
+            };
+          }) || [];
+          
+          // Add project owner to members if not already included
+          const ownerId = p.owner?._id || p.owner;
+          const isOwnerInMembers = members.some(m => m.id === ownerId);
+          
+          if (!isOwnerInMembers && p.owner) {
+            const ownerData = p.owner._id ? p.owner : { _id: ownerId, name: 'Owner', email: '' };
+            members.unshift({
+              id: ownerData._id,
+              name: ownerData.name || 'Owner',
+              email: ownerData.email || '',
+            });
+          }
+          
+          return {
+            id: p._id,
+            name: p.name,
+            description: p.description || '',
+            members,
+            createdAt: new Date(p.createdAt).toISOString().split('T')[0],
+            boards: p.boards?.map((b: any) => ({
+              id: b._id,
+              title: b.name,
+              tasks: (b.tasks || []).map((t: any) => ({
+                id: t._id,
+                title: t.title || '',
+                description: t.description || '',
+                priority: t.priority || 'medium',
+                dueDate: t.dueDate || null,
+                assignee: t.assignedTo?.[0] ? {
+                  id: t.assignedTo[0]._id || t.assignedTo[0],
+                  name: t.assignedTo[0].name || 'Unknown',
+                  email: t.assignedTo[0].email || '',
+                } : null,
+                comments: t.comments || [],
+              })),
+            })) || [],
+          };
+        });
         setProjects(transformedProjects);
       }
     } catch (error: any) {
@@ -112,13 +133,45 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // Validate token on app startup
+  useEffect(() => {
+    const validateToken = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const storedUser = localStorage.getItem('user');
+        
+        if (!token || !storedUser) {
+          setAuthLoading(false);
+          return;
+        }
+
+        // Validate token with backend
+        const response = await authAPI.getMe();
+        if (response.success) {
+          setUser(JSON.parse(storedUser));
+        } else {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+        }
+      } catch (error) {
+        console.error('Token validation failed:', error);
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      } finally {
+        setAuthLoading(false);
+      }
+    };
+
+    validateToken();
+  }, []);
+
   // Load projects on mount if authenticated
   useEffect(() => {
     if (isAuthenticated) {
       refreshProjects();
       loadNotifications();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, refreshProjects, loadNotifications]);
 
   const pushNotification = useCallback((type: AppNotification['type'], message: string) => {
     setNotifications(prev => [{
@@ -176,9 +229,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const createProject = useCallback(async (name: string, description: string, memberEmails: string[]) => {
     try {
-      const response = await projectsAPI.create({ name, description });
+      const response = await projectsAPI.create({ name, description, memberEmails });
       if (response.success) {
         toast.success(`Project "${name}" created!`);
+        if (memberEmails.length > 0) {
+          toast.success(`Invitations sent to ${memberEmails.length} member(s)`);
+        }
         await refreshProjects();
       }
     } catch (error: any) {
@@ -350,7 +406,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   return (
     <AppContext.Provider value={{
-      user, isAuthenticated, login, register, logout,
+      user, isAuthenticated, authLoading, login, register, logout,
       projects, loading, createProject, refreshProjects,
       addBoard, updateBoardTitle, deleteBoard,
       addTask, updateTask, deleteTask, moveTask,
